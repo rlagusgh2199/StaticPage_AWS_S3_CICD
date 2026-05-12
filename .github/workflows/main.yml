@@ -1,0 +1,32 @@
+name: Deploy to S3
+
+# 어떤 이벤트가 발생했을 때 이 스크립트를 실행할지 정의합니다.
+on:
+  push:
+    branches:
+      - main # 본인의 기본 브랜치가 master라면 'master'로 변경하세요.
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest # 가상의 우분투 서버에서 작업이 실행됩니다.
+
+    steps:
+    # 1. 가상 서버로 현재 GitHub 저장소의 코드를 내려받습니다.
+    - name: Checkout source code
+      uses: actions/checkout@v4
+
+    # 2. 아까 등록한 Secrets를 이용해 AWS 인증을 진행합니다.
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ap-northeast-2 # 서울 리전입니다. 본인의 S3 리전과 다르면 수정하세요.
+
+    # 3. AWS CLI를 이용해 S3 버킷으로 파일들을 복사(동기화)합니다.
+    - name: Deploy to S3
+      run: |
+        aws s3 sync . s3://내-버킷-이름 \
+          --exclude ".git/*" \
+          --exclude ".github/*" \
+          --delete
